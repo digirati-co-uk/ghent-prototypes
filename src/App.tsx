@@ -1,9 +1,10 @@
-import { CanvasPanel, SimpleViewerProvider } from "react-iiif-vault";
-import "@atlas-viewer/atlas";
 import { type Column, ReactGrid, type Row } from "@silevis/reactgrid";
+import { CanvasPanel, SimpleViewerProvider } from "react-iiif-vault";
 import "@silevis/reactgrid/styles.css";
 import type { Runtime } from "@atlas-viewer/atlas";
 import { useCallback, useMemo, useRef, useState } from "react";
+import { useStore } from "zustand";
+import { createRowHeightStore } from "./row-height-store";
 
 interface RowData {
 	localName: string;
@@ -81,6 +82,10 @@ const getRows = (people: RowData[]): Row[] => [
 ];
 
 function App() {
+	const store = useMemo(() => createRowHeightStore(), []);
+	const storeData = useStore(store);
+	const height = storeData.resolveHeight();
+
 	const viewer = useRef<Runtime | null>(null);
 	const [people] = useState<RowData[]>(getRowData());
 
@@ -100,14 +105,16 @@ function App() {
 				enableColumnResizeOnAllHeaders
 				enableFillHandle
 				onFocusLocationChanged={({ rowId }: any) => {
+					storeData.setIndex(Number(rowId));
 					setTopOffset((prev) => {
-						const newOffset = 440 + Number(rowId) * 25;
+						// const newOffset = 440 + Number(rowId) * 25;
+						const newOffset = storeData.calculateOffsetHeight();
 						if (viewer.current) {
 							viewer.current.world.gotoRegion({
 								x: 70,
 								y: newOffset,
 								width: 3100,
-								height: 25,
+								height: storeData.resolveHeight(),
 							});
 						}
 						return newOffset;
@@ -131,7 +138,12 @@ function App() {
 			{/* Table first row */}
 			<box
 				id="table-row"
-				target={{ x: 70, y: topOffset, width: 3100, height: 25 }}
+				target={{
+					x: 70,
+					y: storeData.calculateOffsetHeight(),
+					width: 3100,
+					height: height,
+				}}
 				style={{ outline: "1px solid blue" }}
 				relativeStyle
 			/>
@@ -141,6 +153,27 @@ function App() {
 	return (
 		<SimpleViewerProvider manifest="https://iiif.ghentcdh.ugent.be/iiif/manifests/test:primitief_kadaster_leggers:GENT_B_0001-0172">
 			<div className="w-full p-4 h-screen flex flex-col gap-3">
+				<div className="flex items-center gap-4">
+					Debug: h:{~~height} x:{~~storeData.calculateOffsetHeight()}
+					<div className="flex items-center gap-2">
+						<button
+							className="bg-green-500 hover:bg-green-400 text-white py-1.5 px-3 rounded"
+							onClick={() =>
+								storeData.addCorrection(storeData.currentIndex, 10)
+							}
+						>
+							Correct + 10
+						</button>
+						<button
+							className="bg-green-500 hover:bg-green-400 text-white py-1.5 px-3 rounded"
+							onClick={() =>
+								storeData.addCorrection(storeData.currentIndex, -10)
+							}
+						>
+							Correct - 10
+						</button>
+					</div>
+				</div>
 				<div className="flex-1 h-1/2 rounded-xl bg-slate-100 overflow-clip">
 					<CanvasPanel.Viewer
 						onCreated={(preset) => {
