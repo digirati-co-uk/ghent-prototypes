@@ -1,0 +1,41 @@
+{
+	"name": "ghent-prototypes",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"scripts": {
+		"dev": "vite",
+		"build": "tsc -b && vite build",
+		"lint": "eslint .",
+		"preview": "vite preview"
+	},
+	"dependencies": {
+		"@atlas-viewer/atlas": "^3.0.3",
+		"@silevis/reactgrid": "^4.1.17",
+		"@tailwindcss/vite": "^4.1.17",
+		"react": "^19.2.0",
+		"react-dom": "^19.2.0",
+		"react-iiif-vault": "^2.0.6",
+		"tailwindcss": "^4.1.17",
+		"zustand": "^5.0.8"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.3.7",
+		"@eslint/js": "^9.39.1",
+		"@types/node": "^24.10.0",
+		"@types/react": "^19.2.2",
+		"@types/react-dom": "^19.2.2",
+		"@vitejs/plugin-react": "^5.1.0",
+		"babel-plugin-react-compiler": "^19.1.0-rc.3",
+		"globals": "^16.5.0",
+		"typescript": "~5.9.3",
+		"typescript-eslint": "^8.46.3",
+		"vite": "npm:rolldown-vite@7.2.2"
+	},
+	"pnpm": {
+		"overrides": {
+			"react-reconciler": "^0.33.0",
+			"vite": "npm:rolldown-vite@7.2.2"
+		}
+	}
+}

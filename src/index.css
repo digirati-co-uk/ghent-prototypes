@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+.atlas-container {
+	--atlas-container-flex: 1;
+	--atlas-container-height: 100%;
+}
