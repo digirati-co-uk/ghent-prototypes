@@ -20,9 +20,13 @@ export interface RowHeightStore {
   resolveHeight(): number;
 }
 
-export function createRowHeightStore() {
-  const defaultHeight = 25;
-
+export function createRowHeightStore({
+  defaultHeight = 25,
+  marginTop = 440,
+}: {
+  defaultHeight?: number;
+  marginTop?: number;
+}) {
   return createStore<RowHeightStore>((set, get) => {
     const resolveHeight = () => {
       const index = get().currentIndex;
@@ -68,7 +72,7 @@ export function createRowHeightStore() {
       const { rowHeightRanges, currentIndex: _currentIndex, defaultHeight: defaultHeight_ } = get();
       const currentIndex = typeof atIndex === "undefined" ? _currentIndex : atIndex;
       // @todo margin?
-      const margin = 440;
+      const margin = marginTop;
       let height = margin;
 
       if (currentIndex === 0) {

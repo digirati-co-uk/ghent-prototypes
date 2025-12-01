@@ -1,4 +1,10 @@
-import { type Column, ReactGrid, type Row } from "@silevis/reactgrid";
+import {
+	type CellChange,
+	type Column,
+	ReactGrid,
+	type Row,
+	type TextCell,
+} from "@silevis/reactgrid";
 import { CanvasPanel, SimpleViewerProvider } from "react-iiif-vault";
 import "@silevis/reactgrid/styles.css";
 import type { Runtime } from "@atlas-viewer/atlas";
@@ -20,7 +26,7 @@ interface RowData {
 }
 
 const getRowData = (): RowData[] =>
-	Array.from({ length: 79 }, (_, i) => ({
+	Array.from({ length: 33 }, (_, i) => ({
 		localName: `name ${i}`,
 		plotNumber: "",
 		refPart: "",
@@ -81,17 +87,82 @@ const getRows = (people: RowData[]): Row[] => [
 	})),
 ];
 
+const manifests = [
+	{
+		id: "https://iiif.ghentcdh.ugent.be/iiif/manifests/test:primitief_kadaster_leggers:GENT_B_0001-0172",
+		label: "Ghent 1",
+		width: 3100,
+		marginTop: 420,
+		defaultHeight: 50,
+	},
+	{
+		id: "https://sandbox.zenodo.org/api/iiif/record:385592/manifest",
+		label: "Botanic Garden 1",
+		width: 3709,
+		marginTop: 1150,
+		defaultHeight: 60,
+	},
+	{
+		id: "https://sandbox.zenodo.org/api/iiif/record:385594/manifest",
+		label: "Botanic Garden 2",
+		width: 3709,
+		marginTop: 500,
+		defaultHeight: 140,
+	},
+	{
+		id: "https://sandbox.zenodo.org/api/iiif/record:385598/manifest",
+		label: "Botanic Garden 3",
+		width: 7800,
+		marginTop: 520,
+		defaultHeight: 120,
+	},
+	{
+		id: "https://damsssl.llgc.org.uk/iiif/2.0/5798978/manifest.json",
+		label: "NLW",
+		width: 3100,
+		marginTop: 300,
+		defaultHeight: 50,
+	},
+];
+
+const applyChangesToTable = (
+	changes: CellChange<TextCell>[],
+	prevPeople: RowData[],
+): RowData[] => {
+	changes.forEach((change) => {
+		const personIndex = change.rowId as number;
+		const fieldName = change.columnId as keyof RowData;
+		prevPeople[personIndex][fieldName] = change.newCell.text;
+	});
+	return [...prevPeople];
+};
+
 function App() {
-	const store = useMemo(() => createRowHeightStore(), []);
+	const [manifestId, setManifestId] = useState(
+		"https://iiif.ghentcdh.ugent.be/iiif/manifests/test:primitief_kadaster_leggers:GENT_B_0001-0172",
+	);
+	const store = useMemo(
+		() =>
+			createRowHeightStore({
+				defaultHeight:
+					manifests.find((m) => m.id === manifestId)?.defaultHeight || 50,
+				marginTop: manifests.find((m) => m.id === manifestId)?.marginTop || 50,
+			}),
+		[manifestId],
+	);
 	const storeData = useStore(store);
 	const height = storeData.resolveHeight();
+	const [width, setWidth] = useState(3100);
 
 	const viewer = useRef<Runtime | null>(null);
-	const [people] = useState<RowData[]>(getRowData());
+	const [rowData, setRowData] = useState<RowData[]>(getRowData());
+	const handleChanges = (changes: CellChange<TextCell>[]) => {
+		setRowData((prevData) => applyChangesToTable(changes, prevData));
+	};
 
 	const [topOffset, setTopOffset] = useState(440);
 
-	const rows = useMemo(() => getRows(people), [people]);
+	const rows = useMemo(() => getRows(rowData), [rowData]);
 	const columns = useMemo(() => getColumns(), []);
 
 	const table = useMemo(
@@ -104,6 +175,7 @@ function App() {
 				columns={columns}
 				enableColumnResizeOnAllHeaders
 				enableFillHandle
+				onCellsChanged={handleChanges as any}
 				onFocusLocationChanged={({ rowId }: any) => {
 					storeData.setIndex(Number(rowId));
 					setTopOffset((prev) => {
@@ -113,7 +185,7 @@ function App() {
 							viewer.current.world.gotoRegion({
 								x: 70,
 								y: newOffset,
-								width: 3100,
+								width: width,
 								height: storeData.resolveHeight(),
 							});
 						}
@@ -122,18 +194,18 @@ function App() {
 				}}
 			/>
 		),
-		[rows, columns],
+		[rows, columns, manifestId],
 	);
 
 	const focalPoint = (
 		<>
 			{/* Table header */}
-			<box
+			{/*<box
 				id="focal-point"
 				target={{ x: 70, y: 120, width: 3100, height: 260 }}
 				style={{ outline: "2px solid red" }}
 				relativeStyle
-			/>
+			/>*/}
 
 			{/* Table first row */}
 			<box
@@ -141,7 +213,7 @@ function App() {
 				target={{
 					x: 70,
 					y: storeData.calculateOffsetHeight(),
-					width: 3100,
+					width: width,
 					height: height,
 				}}
 				style={{ outline: "1px solid blue" }}
@@ -151,7 +223,26 @@ function App() {
 	);
 
 	return (
-		<SimpleViewerProvider manifest="https://iiif.ghentcdh.ugent.be/iiif/manifests/test:primitief_kadaster_leggers:GENT_B_0001-0172">
+		<SimpleViewerProvider manifest={manifestId} key={manifestId}>
+			<div className="p-4 flex flex-row gap-3">
+				<div>Select manifest:</div>
+				<select
+					className="bg-gray-200 border border-gray-300 rounded py-1 px-3"
+					value={manifestId}
+					onChange={(e) => {
+						setManifestId(e.target.value);
+						setWidth(
+							manifests.find((m) => m.id === e.target.value)?.width || 3100,
+						);
+					}}
+				>
+					{manifests.map((m) => (
+						<option key={m.id} value={m.id}>
+							{m.label}
+						</option>
+					))}
+				</select>
+			</div>
 			<div className="w-full p-4 h-screen flex flex-col gap-3">
 				<div className="flex items-center gap-4">
 					Debug: h:{~~height} x:{~~storeData.calculateOffsetHeight()}
